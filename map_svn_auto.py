@@ -5,7 +5,7 @@ import configparser
 
 RAIZ_TRUNK = ""
 RAIZ_BRANCHES = ""
-PATH_PARAMETROS = "c:\\parametros.ini"
+PATH_PARAMETROS = "C:\\arsenal_5\\parametros.ini"
 
 if not os.path.exists(PATH_PARAMETROS):
    print('ERRO: Não encontrado arquivo de parametrização')
@@ -20,18 +20,18 @@ PATH_TRUNK              = parametros.get( 'GERAL'   , 'CaminhoTrunk'         , f
 PATH_BRANCHES_LOCAIS    = parametros.get( 'GERAL'   , 'CaminhoBranches'      , fallback='')
 TOTAL_BRANCHES_MAPEADAS = parametros.getint( 'GERAL', 'TotalBranchesMapeadas', fallback=0 )
 
-#MAPEAMENTO
-TRUNK   = parametros.get( 'MAPEAMENTO', 'Trunk'  , fallback='')
-BETA    = parametros.get( 'MAPEAMENTO', 'Beta'   , fallback='')
-OK      = parametros.get( 'MAPEAMENTO', 'OK'     , fallback='')
-SUPEROK = parametros.get( 'MAPEAMENTO', 'SuperOK', fallback='')
-ULTRAOK = parametros.get( 'MAPEAMENTO', 'UltraOK', fallback='')
-MEGAOK  = parametros.get( 'MAPEAMENTO', 'MegaOK' , fallback='')
-ANSENAL = parametros.get( 'MAPEAMENTO', 'Arsenal', fallback='')
-
+#VARIAVEIS_MAPEAMENTO
+ARQUIVO_MAPEAMENTO = parametros.get( 'VARIAVEIS_MAPEAMENTO', 'Caminho', fallback='')
+VARIAVEL_BETA      = parametros.get( 'VARIAVEIS_MAPEAMENTO', 'Beta'   , fallback='')
+VARIAVEL_OK        = parametros.get( 'VARIAVEIS_MAPEAMENTO', 'OK'     , fallback='')
+VARIAVEL_SUPEROK   = parametros.get( 'VARIAVEIS_MAPEAMENTO', 'SuperOK', fallback='')
+VARIAVEL_ULTRAOK   = parametros.get( 'VARIAVEIS_MAPEAMENTO', 'UltraOK', fallback='')
+VARIAVEL_MEGAOK    = parametros.get( 'VARIAVEIS_MAPEAMENTO', 'MegaOK' , fallback='')
 
 #*******************************************************************************#
 def retornar_todas_branches():
+
+   print( 'Pegando todas as branches contidas no repositorio...')
 
    processo = subprocess.run(['svn', 'ls', RAIZ_BRANCHES], stdout=subprocess.PIPE)
    todas_branches = []
@@ -46,6 +46,8 @@ def retornar_todas_branches():
       if len(branche) > 0:
          todas_branches.append(branche)
 
+   todas_branches.sort(reverse=True)
+
    return todas_branches
 
 #*******************************************************************************#
@@ -53,21 +55,19 @@ def retornar_todas_brances_local():
 
    local_atual = os.getcwd()
 
-   todas_brances_local = []
-   for diretorio, subpastas, arquivos in os.walk(PATH_BRANCHES_LOCAIS):
-      diretorio = diretorio[diretorio.rfind('\\')+1:]
-      todas_brances_local.append(diretorio)
+   os.chdir(PATH_BRANCHES_LOCAIS)
+   todas_brances_local = list(filter(os.path.isdir, os.listdir()))
 
    os.chdir(local_atual)
 
    return todas_brances_local
 
 #*******************************************************************************#
-def baixar_branches():
+def baixar_branches(todas_branches_repositorio):
 
-   todas_branches = retornar_todas_branches()
-   todas_branches.sort(reverse=True)
-   todas_branches = todas_branches[:TOTAL_BRANCHES_MAPEADAS]
+   print('Inicializando verificacao das branches locais...')
+
+   todas_branches = todas_branches_repositorio[:TOTAL_BRANCHES_MAPEADAS]
 
    if len(todas_branches) == 0:
       print('Erro: Não foi encontrado nenhum branche no repositório.')
@@ -97,60 +97,70 @@ def baixar_branches():
    return True
 
 #*******************************************************************************#
-def realizar_mapeamentos():
+def retornar_branches_locais_validas(todas_branches_repositorio):
 
-   if len(ANSENAL) != 0 and not os.path.exists(ANSENAL) and len(PATH_ARSENAL) != 0:
-      print('Mapeando o Arsenal: ' + PATH_ARSENAL )
-      subprocess.run(['subst', ANSENAL, PATH_ARSENAL], stdout=subprocess.PIPE)
+   branches_locais_validas = []
 
-   if len(TRUNK) != 0 and not os.path.exists(TRUNK) and len(PATH_TRUNK) != 0:
-      print('Mapeando a Trunk: ' + PATH_TRUNK )
-      subprocess.run(['subst', TRUNK, PATH_TRUNK], stdout=subprocess.PIPE)
+   for branche in retornar_todas_brances_local():
+      if branche in todas_branches_repositorio:
+         branches_locais_validas.append(branche)
 
-   retornar_todas_brances_local = retornar_branches_locais_validas()
+   return branches_locais_validas
+
+#*******************************************************************************#
+def editar_arquivo_mapeamento(todas_branches_repositorio):
+
+   print('Iniciado edicao do arquivo de mapeamento...')
+
+   if len(ARQUIVO_MAPEAMENTO) == 0:
+      print('Nao parametrizado arquivo de mapeamento')
+      return
+
+   arquivo        = open(ARQUIVO_MAPEAMENTO, 'r', encoding="utf-8")
+   linhas_arquivo = arquivo.readlines()
+   arquivo.close()
+
+   retornar_todas_brances_local = retornar_branches_locais_validas(todas_branches_repositorio)
    retornar_todas_brances_local.sort(reverse=True)
 
    mapeamentos = []
    nomes       = ['Beta', 'OK', 'SuperOK', 'UltraOK', 'MegaOK']
-   unidades    = [BETA, OK, SUPEROK, ULTRAOK, MEGAOK]
+   variaveis    = [VARIAVEL_BETA, VARIAVEL_OK, VARIAVEL_SUPEROK, VARIAVEL_ULTRAOK, VARIAVEL_MEGAOK]
 
-   for posicao in range(len(unidades)):
+   for posicao in range(len(variaveis)):
 
-      if len(unidades[posicao]) == 0 or os.path.exists(unidades[posicao]):
+      if len(variaveis[posicao]) == 0 or os.path.exists(variaveis[posicao]):
          continue
 
       if len(retornar_todas_brances_local) <= posicao:
          continue
 
       mapeamentos.append( { 'Nome': nomes[posicao],
-                            'Unidade':unidades[posicao],
+                            'Variavel':variaveis[posicao],
                             'Branche': retornar_todas_brances_local[posicao]})
 
+   for posicao in range(len(linhas_arquivo)):
+      for mapeamento in mapeamentos:
+         if 'set ' + mapeamento['Variavel'] in linhas_arquivo[ posicao ]:
+            linhas_arquivo[ posicao ] = 'set ' + mapeamento['Variavel'] + '=' + mapeamento['Branche'] + '\n'
 
-   for mapeamento in mapeamentos:
-      print('Mapeando a ' + mapeamento['Nome'] + ': ' + mapeamento['Unidade'])
-      subprocess.run(['subst', mapeamento['Unidade'], PATH_BRANCHES_LOCAIS + '\\' + mapeamento['Branche']], stdout=subprocess.PIPE)
-
-
-#*******************************************************************************#
-def retornar_branches_locais_validas():
-
-   todas_branches = retornar_todas_branches()
-   branches_locais_validas = []
-
-   for branche in retornar_todas_brances_local():
-      if branche in todas_branches:
-         branches_locais_validas.append(branche)
-
-   return branches_locais_validas
-
+   arquivo = open(ARQUIVO_MAPEAMENTO, 'w', encoding="utf-8")
+   arquivo.writelines(linhas_arquivo)
+   arquivo.close()
 
 #*******************************************************************************#
 if __name__ == "__main__":
+
+   print( 'Inicializado script de atualizacao de branches\n')
 
    if len(PATH_BRANCHES_LOCAIS) == 0 or TOTAL_BRANCHES_MAPEADAS == 0:
       print('Erro: Verificar parametrizacao do arquivo parametros.ini')
       quit()
 
-   baixar_branches()
-   realizar_mapeamentos()
+   todas_branches_repositorio = retornar_todas_branches()
+
+   if baixar_branches( todas_branches_repositorio ):
+      editar_arquivo_mapeamento( todas_branches_repositorio )
+
+   print( '\nFinalizado script de atualizacao de branches')
+

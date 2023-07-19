@@ -1,5 +1,5 @@
 # map_svn_auto
-Para facilitar
+Para facilitar a virada de versão, o script `map_svn_auto` tem como objetivo automatizar o checkout das braches e realizar a alteração no arquivo de mapeamento virtual das unidades, conforme parametrizado no cabeçalho do script.
 
 
 ## Para utilizar o script map_svn_auto.py é necessário seguir alguns passos:

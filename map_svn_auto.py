@@ -2,13 +2,11 @@
 import os
 import subprocess
 
+#Caminho dos Repositorios na rede
 RAIZ_TRUNK = ""
 RAIZ_BRANCHES = ""
 
-#***********ALTERAR APENAS ESTAS CONSTANTES************************************#
-#GERAL
-PATH_ARSENAL            = "C:\\arsenal_5"
-PATH_TRUNK              = "C:\\ProdutosSG\\trunk_nova"
+#*******************************************************************************#
 PATH_BRANCHES_LOCAIS    = "D:\\ProdutosSG\\branches_nova"
 ARQUIVO_MAPEAMENTO      = "C:\\arsenal_5\\mapeiadrivers.cmd"
 TOTAL_BRANCHES_MAPEADAS = 4 #Quantidade minima de Branches para checkout
